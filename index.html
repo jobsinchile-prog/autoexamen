@@ -25,6 +25,7 @@
     --border: #2e3250;
     --gold: #c9a84c;
     --mental: #8e44ad;
+    --warning: #7a2e1a;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -64,7 +65,8 @@
 
   #menu {
     justify-content: center; align-items: center;
-    padding: 40px 32px; text-align: center;
+    padding: 40px 32px;
+    text-align: center;
     background: radial-gradient(ellipse at 50% 30%, #1e2a4a 0%, var(--bg) 70%);
     min-height: 100vh;
   }
@@ -107,6 +109,12 @@
     margin-top: 12px;
   }
   .btn-outline:hover { background: var(--accent); transform: translateY(-2px); }
+  .btn-warning {
+    background: var(--warning);
+    border: 1px solid var(--danger);
+    box-shadow: 0 4px 20px rgba(122,46,26,0.35);
+  }
+  .btn-warning:hover { background: #9a3a22; box-shadow: 0 8px 28px rgba(122,46,26,0.45); }
 
   .time-config {
     margin: 20px auto 10px;
@@ -139,6 +147,18 @@
     margin-top: 8px;
     font-size: 10px;
     color: var(--muted);
+  }
+
+  .delete-section {
+    margin-top: 20px;
+    max-width: 340px;
+  }
+  .delete-section small {
+    display: block;
+    margin-top: 8px;
+    font-size: 10px;
+    color: #e67e22;
+    line-height: 1.4;
   }
 
   .progress-wrap { padding: 14px 20px 8px; background: var(--bg2); border-bottom: 1px solid var(--border); }
@@ -222,7 +242,6 @@
     border-radius: 8px;
   }
 
-  /* Modal para ejercicio mental */
   .modal {
     display: none;
     position: fixed;
@@ -236,9 +255,7 @@
     align-items: center;
     padding: 20px;
   }
-  .modal.active {
-    display: flex;
-  }
+  .modal.active { display: flex; }
   .modal-content {
     background: var(--card);
     border-radius: 20px;
@@ -330,6 +347,17 @@
     <small>📱 La app te recordará a esta hora (si permites notificaciones)</small>
     <button class="btn btn-outline" onclick="solicitarPermisoYProgramar()" style="margin-top: 12px;">🔔 ACTIVAR RECORDATORIO</button>
   </div>
+
+  <!-- SECCIÓN DE BORRADO DE DATOS (antes de desinstalar) -->
+  <div class="delete-section">
+    <button class="btn btn-warning" onclick="borrarTodosLosDatos()">
+      🗑️ BORRAR DATOS (antes de desinstalar)
+    </button>
+    <small>
+      ⚠️ IMPORTANTE: Haz clic aquí ANTES de desinstalar la app desde el sistema operativo.<br>
+      Si no lo haces, los datos pueden quedar guardados en el navegador.
+    </small>
+  </div>
 </div>
 
 <!-- EXAMEN -->
@@ -395,6 +423,18 @@
     });
   }
 })();
+
+// ==================== BORRAR TODOS LOS DATOS ====================
+function borrarTodosLosDatos() {
+  if (confirm("⚠️ ¿BORRAR TODOS LOS DATOS?\n\nEsto eliminará:\n- Todo el historial de exámenes\n- Tus acciones compromiso guardadas\n- La hora de recordatorio\n- Todas tus respuestas\n\nEsta acción NO se puede deshacer.\n\n⚠️ Haz esto ANTES de desinstalar la app.\n\n¿Continuar?")) {
+    localStorage.clear();
+    showToast("🗑️ Todos tus datos han sido borrados");
+    // Recargar la página para reiniciar el estado
+    setTimeout(() => {
+      location.reload();
+    }, 1500);
+  }
+}
 
 // ==================== BANCO DE PREGUNTAS ====================
 const BANCO = [
