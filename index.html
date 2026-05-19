@@ -415,12 +415,67 @@
 <div class="toast" id="toast">✓ Guardado exitosamente</div>
 
 <script>
-// ==================== REGISTRO DE SERVICE WORKER ====================
+// ==================== REGISTRO DE SERVICE WORKER Y MANIFEST CON ID ====================
 (function registrarPWA() {
+  // 1. Crear e inyectar manifest.json con ID fijo para evitar registros fantasmas
+  const manifestData = {
+    id: "/autoexamen",           // <--- CLAVE: evita que queden registros al desinstalar
+    name: "Autoexamen Diario",
+    short_name: "Autoexamen",
+    start_url: ".",
+    display: "standalone",
+    theme_color: "#191b22",
+    background_color: "#191b22",
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234274ea'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='monospace'%3E🔍%3C/text%3E%3C/svg%3E",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any maskable"
+      }
+    ]
+  };
+  
+  // Si no existe un manifest link, lo creamos
+  let manifestLink = document.querySelector('link[rel="manifest"]');
+  if (!manifestLink) {
+    manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifestData));
+    document.head.appendChild(manifestLink);
+  }
+  
+  // 2. Registrar Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function(err) {
-      console.log('Service Worker no disponible:', err);
+      console.log('Service Worker no disponible, intentando inline:', err);
+      registerInlineServiceWorker();
     });
+  }
+  
+  function registerInlineServiceWorker() {
+    const swCode = `self.addEventListener('install', event => {
+      self.skipWaiting();
+      event.waitUntil(
+        caches.open('autoexamen-v1').then(cache => {
+          return cache.addAll(['/', '/index.html']);
+        })
+      );
+    });
+    self.addEventListener('fetch', event => {
+      event.respondWith(
+        caches.match(event.request).then(response => {
+          return response || fetch(event.request);
+        })
+      );
+    });`;
+    
+    const blob = new Blob([swCode], {type: 'application/javascript'});
+    const url = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).then(reg => {
+      console.log('Service Worker inline registrado');
+      URL.revokeObjectURL(url);
+    }).catch(err => console.log('Error SW inline:', err));
   }
 })();
 
@@ -429,7 +484,6 @@ function borrarTodosLosDatos() {
   if (confirm("⚠️ ¿BORRAR TODOS LOS DATOS?\n\nEsto eliminará:\n- Todo el historial de exámenes\n- Tus acciones compromiso guardadas\n- La hora de recordatorio\n- Todas tus respuestas\n\nEsta acción NO se puede deshacer.\n\n⚠️ Haz esto ANTES de desinstalar la app.\n\n¿Continuar?")) {
     localStorage.clear();
     showToast("🗑️ Todos tus datos han sido borrados");
-    // Recargar la página para reiniciar el estado
     setTimeout(() => {
       location.reload();
     }, 1500);
