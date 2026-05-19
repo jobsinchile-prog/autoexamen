@@ -2,9 +2,25 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Autoexamen</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<!-- PWA metadatos para instalación en móvil -->
+<link rel="manifest" href="data:application/manifest+json,{
+  \"name\": \"Autoexamen Diario\",
+  \"short_name\": \"Autoexamen\",
+  \"start_url\": \".\",
+  \"display\": \"standalone\",
+  \"theme_color\": \"#191b22\",
+  \"background_color\": \"#191b22\",
+  \"icons\": [{
+    \"src\": \"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234274ea'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='monospace'%3E🔍%3C/text%3E%3C/svg%3E\",
+    \"sizes\": \"any\",
+    \"type\": \"image/svg+xml\"
+  }]
+}">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
   :root {
     --bg: #191b22;
@@ -27,12 +43,10 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: 0;
   }
 
-  .screen { display: none; width: 100%; max-width: 520px; min-height: 100vh; flex-direction: column; }
+  .screen { display: none; width: 100%; min-height: 100vh; flex-direction: column; }
   .screen.active { display: flex; }
 
   .topbar {
@@ -61,6 +75,7 @@
     justify-content: center; align-items: center;
     padding: 40px 32px; text-align: center;
     background: radial-gradient(ellipse at 50% 30%, #1e2a4a 0%, var(--bg) 70%);
+    min-height: 100vh;
   }
   .menu-icon { font-size: 52px; margin-bottom: 24px; }
   .menu-title {
@@ -69,7 +84,7 @@
   }
   .menu-verse {
     color: var(--muted); font-size: 14px; line-height: 1.7;
-    max-width: 320px; margin: 0 auto 50px; font-style: italic;
+    max-width: 320px; margin: 0 auto 30px; font-style: italic;
   }
   .menu-verse span { display: block; font-size: 11px; margin-top: 6px; color: var(--accent); font-style: normal; letter-spacing: 1px; }
 
@@ -86,6 +101,46 @@
   .btn:active { transform: translateY(0); opacity: 0.88; }
   .btn-danger { background: var(--danger); box-shadow: 0 4px 20px rgba(192,57,43,0.35); }
   .btn-danger:hover { box-shadow: 0 8px 28px rgba(192,57,43,0.45); }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--accent);
+    box-shadow: none;
+    margin-top: 12px;
+  }
+  .btn-outline:hover { background: var(--accent); transform: translateY(-2px); }
+
+  .time-config {
+    margin: 20px auto 10px;
+    max-width: 340px;
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+  }
+  .time-config label {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 8px;
+  }
+  .time-config select {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: monospace;
+    cursor: pointer;
+  }
+  .time-config small {
+    display: block;
+    margin-top: 8px;
+    font-size: 10px;
+    color: var(--muted);
+  }
 
   .progress-wrap { padding: 14px 20px 8px; background: var(--bg2); border-bottom: 1px solid var(--border); }
   .progress-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 7px; text-transform: uppercase; display: flex; justify-content: space-between; }
@@ -158,6 +213,16 @@
   .reflection-box .ref-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
   .reflection-box p { font-size: 13px; color: #ccc; line-height: 1.7; }
 
+  .ethical-notice {
+    background: #1a1a2e;
+    border-left: 3px solid var(--gold);
+    margin: 16px 16px 0;
+    padding: 12px 14px;
+    font-size: 11px;
+    color: #aaa;
+    border-radius: 8px;
+  }
+
   .toast {
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
     background: var(--success); color: #fff; padding: 12px 28px; border-radius: 30px;
@@ -182,6 +247,21 @@
     <span>— Proverbios 4:23</span>
   </p>
   <button class="btn" onclick="iniciarExamen()">INICIAR EXAMEN DIARIO</button>
+
+  <!-- Configuración de recordatorio -->
+  <div class="time-config">
+    <label>⏰ RECORDATORIO DIARIO</label>
+    <select id="horaRecordatorio">
+      <option value="0">00:00</option><option value="1">01:00</option><option value="2">02:00</option><option value="3">03:00</option>
+      <option value="4">04:00</option><option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option>
+      <option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option><option value="11">11:00</option>
+      <option value="12">12:00</option><option value="13">13:00</option><option value="14">14:00</option><option value="15">15:00</option>
+      <option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option>
+      <option value="20" selected>20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
+    </select>
+    <small>📱 La app te recordará a esta hora (si permites notificaciones)</small>
+    <button class="btn btn-outline" onclick="solicitarPermisoYProgramar()" style="margin-top: 12px;">🔔 ACTIVAR RECORDATORIO</button>
+  </div>
 </div>
 
 <!-- EXAMEN -->
@@ -216,6 +296,9 @@
     <div class="ref-title">📖 Reflexión de Cierre</div>
     <p>Presenta estas áreas en oración. La fuerza de voluntad humana no basta; pide renovación y define una acción correctiva para mañana.</p>
   </div>
+  <div class="ethical-notice">
+    ⚠️ Esto no sustituye la confesión sacramental ni consejería profesional. Es una herramienta personal de reflexión.
+  </div>
   <div class="bottom-action">
     <button class="btn btn-danger" onclick="finalizarExamen()">FINALIZAR Y GUARDAR</button>
   </div>
@@ -228,7 +311,7 @@ const BANCO = [
   {
     titulo: "M1: DIOS Y SOBERANÍA",
     items: [
-      { id:1, texto:"¿Atribuí mis éxitos del día a mis propias capacidades omitiendo dar gracias a Dios?", oracion:"Padre, todo lo bueno que hay en mí viene de Ti. Perdóname por actuar como si fuera autor de mis propios logros. Enséñame a reconocerte en cada victoria.", ref:"Deuteronomio 8:17-18" },
+      { id:1, texto:"¿Atribuí mis éxitos del día a mis propias capacidades omitiendo dar gracias a Dios?", oracion:"Padre, todo lo bueno que hay en mí viene de Ti. Perdóname por actuar como si fuera autor de mis logros. Enséñame a reconocerte en cada victoria.", ref:"Deuteronomio 8:17-18" },
       { id:2, texto:"¿Puse mi seguridad mental en cosas temporales (dinero, planes, aprobación) antes que en Dios?", oracion:"Señor, solo Tú eres roca firme. Perdóname por buscar estabilidad en lo que perece. Ancla mi corazón únicamente en Ti.", ref:"Salmo 62:5-6" },
       { id:3, texto:"¿Actué como si Dios no existiera en mis decisiones, sin orar ni buscar dirección divina?", oracion:"Dios mío, perdóname por excluirte de mis planes. Que en todo camino que tome, seas Tú quien dirija mis pasos.", ref:"Proverbios 3:5-6" },
       { id:4, texto:"¿Permití que la queja dominara mis pensamientos sobre las bendiciones que me rodean?", oracion:"Padre, perdóname por la murmuración. Dame ojos para ver Tu mano en cada circunstancia y un corazón agradecido.", ref:"Filipenses 4:11" },
@@ -291,6 +374,63 @@ const BANCO = [
 
 let moduloActual = 0;
 let respuestas = {};
+
+// --- Recordatorios configurables ---
+function solicitarPermisoYProgramar() {
+  if (!("Notification" in window)) {
+    showToast("❌ Este navegador no soporta notificaciones");
+    return;
+  }
+  if (Notification.permission === "granted") {
+    programarRecordatorio();
+  } else if (Notification.permission !== "denied") {
+    Notification.requestPermission().then(perm => {
+      if (perm === "granted") programarRecordatorio();
+      else showToast("🔕 Permiso denegado. No habrá recordatorios.");
+    });
+  } else {
+    showToast("🔕 Permiso bloqueado. Revisa la configuración del navegador.");
+  }
+}
+
+function programarRecordatorio() {
+  const horaSel = parseInt(document.getElementById("horaRecordatorio").value);
+  localStorage.setItem("horaRecordatorio", horaSel);
+  showToast(`✅ Recordatorio programado a las ${horaSel.toString().padStart(2,'0')}:00`);
+  // La comprobación se hará cada minuto
+  if (window._notifInterval) clearInterval(window._notifInterval);
+  window._notifInterval = setInterval(verificarYNotificar, 60000);
+  verificarYNotificar(); // por si justo es la hora
+}
+
+function verificarYNotificar() {
+  if (Notification.permission !== "granted") return;
+  const horaGuardada = localStorage.getItem("horaRecordatorio");
+  if (horaGuardada === null) return;
+  const ahora = new Date();
+  const horaActual = ahora.getHours();
+  if (horaActual == parseInt(horaGuardada)) {
+    // Evitar notificar varias veces en la misma hora
+    const hoyStr = ahora.toDateString();
+    const ultimaNotif = localStorage.getItem("ultimaNotifFecha");
+    if (ultimaNotif === hoyStr) return;
+    localStorage.setItem("ultimaNotifFecha", hoyStr);
+    new Notification("🔍 AUTOEXAMEN DIARIO", {
+      body: "Tómate 5 minutos para revisar tu corazón. 'Guarda tu corazón con toda diligencia' Proverbios 4:23",
+      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234274ea'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='monospace'%3E🔍%3C/text%3E%3C/svg%3E"
+    });
+  }
+}
+
+function cargarHoraGuardada() {
+  const hora = localStorage.getItem("horaRecordatorio");
+  if (hora !== null) {
+    const select = document.getElementById("horaRecordatorio");
+    if (select) select.value = hora;
+  }
+  if (Notification.permission === "granted") programarRecordatorio();
+}
+// --- Fin recordatorios ---
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -410,13 +550,18 @@ function finalizarExamen() {
   setTimeout(() => showScreen('menu'), 1800);
 }
 
-function showToast() {
+function showToast(msg) {
   const t = document.getElementById('toast');
+  if (msg) t.textContent = msg;
+  else t.textContent = "✓ Guardado exitosamente";
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
 }
 
 function volverMenu() { showScreen('menu'); }
+
+// Inicialización
+cargarHoraGuardada();
 </script>
 </body>
 </html>
