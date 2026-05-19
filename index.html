@@ -24,6 +24,7 @@
     --success: #27ae60;
     --border: #2e3250;
     --gold: #c9a84c;
+    --mental: #8e44ad;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -91,6 +92,14 @@
   .btn:active { transform: translateY(0); opacity: 0.88; }
   .btn-danger { background: var(--danger); box-shadow: 0 4px 20px rgba(192,57,43,0.35); }
   .btn-danger:hover { box-shadow: 0 8px 28px rgba(192,57,43,0.45); }
+  .btn-mental {
+    background: var(--mental);
+    box-shadow: 0 4px 20px rgba(142,68,173,0.35);
+    margin-top: 12px;
+    font-size: 11px;
+    padding: 10px;
+  }
+  .btn-mental:hover { box-shadow: 0 8px 28px rgba(142,68,173,0.45); }
   .btn-outline {
     background: transparent;
     border: 1px solid var(--accent);
@@ -213,6 +222,88 @@
     border-radius: 8px;
   }
 
+  /* Modal para ejercicio mental */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    z-index: 200;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+  .modal.active {
+    display: flex;
+  }
+  .modal-content {
+    background: var(--card);
+    border-radius: 20px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px;
+    border: 1px solid var(--mental);
+    position: relative;
+  }
+  .modal-content h3 {
+    font-family: 'Cinzel', serif;
+    color: var(--mental);
+    margin-bottom: 16px;
+    font-size: 18px;
+  }
+  .modal-content .exercise-step {
+    margin: 20px 0;
+    padding: 12px;
+    background: var(--bg2);
+    border-radius: 12px;
+  }
+  .modal-content .exercise-step h4 {
+    color: var(--gold);
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .modal-content .exercise-step p {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .modal-content textarea {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    font-size: 13px;
+    margin: 10px 0;
+    resize: vertical;
+  }
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 24px;
+    cursor: pointer;
+  }
+  .modal-footer {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .modal-footer button {
+    flex: 1;
+    padding: 12px;
+    font-size: 12px;
+  }
+
   .toast {
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
     background: var(--success); color: #fff; padding: 12px 28px; border-radius: 30px;
@@ -238,7 +329,6 @@
   </p>
   <button class="btn" onclick="iniciarExamen()">INICIAR EXAMEN DIARIO</button>
 
-  <!-- Configuración de recordatorio -->
   <div class="time-config">
     <label>⏰ RECORDATORIO DIARIO</label>
     <select id="horaRecordatorio">
@@ -294,78 +384,28 @@
   </div>
 </div>
 
+<!-- MODAL para ejercicio mental -->
+<div class="modal" id="mentalModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="cerrarModal()">&times;</button>
+    <h3>🧠 EJERCICIO MENTAL</h3>
+    <div id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="guardarAccion()">GUARDAR ACCIÓN</button>
+      <button class="btn btn-outline" onclick="cerrarModal()">CERRAR</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">✓ Guardado exitosamente</div>
 
 <script>
-// ==================== REGISTRO DE SERVICE WORKER Y PWA ====================
-// Este script se ejecuta al cargar la página y registra el Service Worker
-// También inyecta el manifest.json dinámicamente
-
+// ==================== REGISTRO DE SERVICE WORKER ====================
 (function registrarPWA() {
-  // 1. Crear e inyectar manifest.json dinámicamente
-  const manifestData = {
-    name: "Autoexamen Diario",
-    short_name: "Autoexamen",
-    start_url: ".",
-    display: "standalone",
-    theme_color: "#191b22",
-    background_color: "#191b22",
-    icons: [
-      {
-        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234274ea'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='monospace'%3E🔍%3C/text%3E%3C/svg%3E",
-        sizes: "any",
-        type: "image/svg+xml",
-        purpose: "any maskable"
-      }
-    ]
-  };
-  
-  // Si no existe un manifest link, lo creamos
-  let manifestLink = document.querySelector('link[rel="manifest"]');
-  if (!manifestLink) {
-    manifestLink = document.createElement('link');
-    manifestLink.rel = 'manifest';
-    manifestLink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifestData));
-    document.head.appendChild(manifestLink);
-  }
-  
-  // 2. Registrar Service Worker
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(function(reg) {
-      console.log('Service Worker registrado con éxito:', reg);
-    }).catch(function(err) {
-      console.log('Error al registrar Service Worker:', err);
-      // Si falla, intentamos con un SW inline
-      registerInlineServiceWorker();
+    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+      console.log('Service Worker no disponible:', err);
     });
-  }
-  
-  function registerInlineServiceWorker() {
-    const swCode = `self.addEventListener('install', event => {
-      self.skipWaiting();
-      event.waitUntil(
-        caches.open('autoexamen-v1').then(cache => {
-          return cache.addAll([
-            '/',
-            '/index.html'
-          ]);
-        })
-      );
-    });
-    self.addEventListener('fetch', event => {
-      event.respondWith(
-        caches.match(event.request).then(response => {
-          return response || fetch(event.request);
-        })
-      );
-    });`;
-    
-    const blob = new Blob([swCode], {type: 'application/javascript'});
-    const url = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(url).then(reg => {
-      console.log('Service Worker inline registrado');
-      URL.revokeObjectURL(url);
-    }).catch(err => console.log('Error SW inline:', err));
   }
 })();
 
@@ -374,71 +414,297 @@ const BANCO = [
   {
     titulo: "M1: DIOS Y SOBERANÍA",
     items: [
-      { id:1, texto:"¿Atribuí mis éxitos del día a mis propias capacidades omitiendo dar gracias a Dios?", oracion:"Padre, todo lo bueno que hay en mí viene de Ti. Perdóname por actuar como si fuera autor de mis logros. Enséñame a reconocerte en cada victoria.", ref:"Deuteronomio 8:17-18" },
-      { id:2, texto:"¿Puse mi seguridad mental en cosas temporales (dinero, planes, aprobación) antes que en Dios?", oracion:"Señor, solo Tú eres roca firme. Perdóname por buscar estabilidad en lo que perece. Ancla mi corazón únicamente en Ti.", ref:"Salmo 62:5-6" },
-      { id:3, texto:"¿Actué como si Dios no existiera en mis decisiones, sin orar ni buscar dirección divina?", oracion:"Dios mío, perdóname por excluirte de mis planes. Que en todo camino que tome, seas Tú quien dirija mis pasos.", ref:"Proverbios 3:5-6" },
-      { id:4, texto:"¿Permití que la queja dominara mis pensamientos sobre las bendiciones que me rodean?", oracion:"Padre, perdóname por la murmuración. Dame ojos para ver Tu mano en cada circunstancia y un corazón agradecido.", ref:"Filipenses 4:11" },
-      { id:5, texto:"¿Traté las bendiciones diariamente como obligaciones y no con gratitud?", oracion:"Señor, perdóname por dar por sentado lo que Tu mano sostiene cada día. Renueva en mí la gratitud genuina.", ref:"Salmo 103:2" },
-      { id:6, texto:"¿Exigí a Dios que las cosas se hicieran bajo mis propios términos y mis tiempos?", oracion:"Padre, no mi voluntad sino la Tuya. Perdóname por querer doblar Tu soberanía a mis deseos.", ref:"Lucas 22:42" },
-      { id:7, texto:"¿Realicé disciplinas espirituales por mera rutina con la mente completamente dispersa?", oracion:"Señor, perdóname por honrarte con los labios mientras mi corazón estaba lejos. Que mi devoción nazca del amor y no del hábito vacío.", ref:"Isaías 29:13" },
-      { id:8, texto:"¿Busqué una relación de conveniencia con lo divino solo para pedir resolver problemas?", oracion:"Dios mío, perdóname por acercarme a Ti solo cuando necesito algo. Que Te busque por lo que Tú eres, no solo por lo que puedes darme.", ref:"Salmo 27:4" }
+      { id:1, texto:"¿Atribuí mis éxitos del día a mis propias capacidades omitiendo dar gracias a Dios?", oracion:"Padre, todo lo bueno que hay en mí viene de Ti. Perdóname por actuar como si fuera autor de mis logros. Enséñame a reconocerte en cada victoria.", ref:"Deuteronomio 8:17-18", categoria:"orgullo" },
+      { id:2, texto:"¿Puse mi seguridad mental en cosas temporales (dinero, planes, aprobación) antes que en Dios?", oracion:"Señor, solo Tú eres roca firme. Perdóname por buscar estabilidad en lo que perece. Ancla mi corazón únicamente en Ti.", ref:"Salmo 62:5-6", categoria:"ansiedad" },
+      { id:3, texto:"¿Actué como si Dios no existiera en mis decisiones, sin orar ni buscar dirección divina?", oracion:"Dios mío, perdóname por excluirte de mis planes. Que en todo camino que tome, seas Tú quien dirija mis pasos.", ref:"Proverbios 3:5-6", categoria:"orgullo" },
+      { id:4, texto:"¿Permití que la queja dominara mis pensamientos sobre las bendiciones que me rodean?", oracion:"Padre, perdóname por la murmuración. Dame ojos para ver Tu mano en cada circunstancia y un corazón agradecido.", ref:"Filipenses 4:11", categoria:"queja" },
+      { id:5, texto:"¿Traté las bendiciones diariamente como obligaciones y no con gratitud?", oracion:"Señor, perdóname por dar por sentado lo que Tu mano sostiene cada día. Renueva en mí la gratitud genuina.", ref:"Salmo 103:2", categoria:"gratitud" },
+      { id:6, texto:"¿Exigí a Dios que las cosas se hicieran bajo mis propios términos y mis tiempos?", oracion:"Padre, no mi voluntad sino la Tuya. Perdóname por querer doblar Tu soberanía a mis deseos.", ref:"Lucas 22:42", categoria:"orgullo" },
+      { id:7, texto:"¿Realicé disciplinas espirituales por mera rutina con la mente completamente dispersa?", oracion:"Señor, perdóname por honrarte con los labios mientras mi corazón estaba lejos. Que mi devoción nazca del amor y no del hábito vacío.", ref:"Isaías 29:13", categoria:"atencion" },
+      { id:8, texto:"¿Busqué una relación de conveniencia con lo divino solo para pedir resolver problemas?", oracion:"Dios mío, perdóname por acercarme a Ti solo cuando necesito algo. Que Te busque por lo que Tú eres, no solo por lo que puedes darme.", ref:"Salmo 27:4", categoria:"egoismo" }
     ]
   },
   {
     titulo: "M2: TRATO CON EL PRÓJIMO",
     items: [
-      { id:9,  texto:"¿Fui hipócrita al adular a alguien por fuera mientras por dentro sentía desprecio?", oracion:"Señor, perdóname por la doblez de mi corazón. Crea en mí una sinceridad genuina y líbrame de toda hipocresía.", ref:"Santiago 3:17" },
-      { id:10, texto:"¿Hice favores o buenas acciones esperando reconocimiento o un favor de vuelta?", oracion:"Padre, perdóname por servir buscando mi propia gloria. Que mis obras sean hechas solo para Tu honra, en secreto si es necesario.", ref:"Mateo 6:3-4" },
-      { id:11, texto:"¿Exageré o alteré historias para proyectar una imagen más exitosa o inteligente de mí?", oracion:"Señor, Tú eres Dios de verdad. Perdóname por adornar la realidad para parecer más de lo que soy. Que me baste con Tu aprobación.", ref:"Proverbios 12:22" },
-      { id:12, texto:"¿Retuve ofensas del día alimentando el resentimiento en lugar de decidir perdonar?", oracion:"Padre, así como Tú en Cristo me perdonaste, dame la gracia de perdonar también. Sana mi corazón del resentimiento que cargo hoy.", ref:"Efesios 4:32" },
-      { id:13, texto:"¿Practiqué hostilidad pasiva (ley del hielo, sarcasmo) con quien me ofendió?", oracion:"Señor, perdóname por el castigo silencioso que ejercí. Dame valentía para hablar con verdad y amor, y no herir con el silencio.", ref:"Mateo 18:15" },
-      { id:14, texto:"¿Deseé secretamente que le fuera mal o que fuera expuesta una persona que me hirió?", oracion:"Dios mío, perdóname por ese deseo oscuro. Transforma mi corazón para bendecir a quienes me lastiman, como Tú mismo me enseñaste.", ref:"Romanos 12:14" },
-      { id:15, texto:"¿Hablé de los defectos o vida privada de alguien que no estaba presente para defenderse?", oracion:"Señor, perdóname por herir con mis palabras a quien no pudo defenderse. Pon guarda a mi boca y guárdame de destruir con la lengua.", ref:"Salmo 141:3" },
-      { id:16, texto:"¿Disfracé el chisme o murmuración como preocupación legítima o 'motivo de oración'?", oracion:"Padre, perdóname por usar palabras piadosas para encubrir la murmuración. Que mi intercesión sea real y mi lengua, limpia.", ref:"Proverbios 20:19" },
-      { id:17, texto:"¿Fui áspero, hiriente o impaciente con empleados, subordinados, pareja o familia?", oracion:"Señor, perdóname por la dureza con que traté a quienes pusiste bajo mi cuidado. Viste Tu mansedumbre en mi trato cotidiano.", ref:"Colosenses 3:12" },
-      { id:18, texto:"¿Sentí molestia, celos o incomodidad ante el éxito o prosperidad de otra persona?", oracion:"Dios mío, perdóname por la envidia que empañó mi corazón. Enséñame a celebrar el bien ajeno como si fuera propio.", ref:"1 Corintios 13:4" },
-      { id:19, texto:"¿Me alegré secretamente del fracaso o de una equivocación cometida por mi competencia?", oracion:"Padre, perdóname por ese gozo maligno. Que jamás me alegre del mal de nadie, sino que aprenda a llorar con los que lloran.", ref:"Proverbios 24:17" },
-      { id:20, texto:"¿Eclipsé el logro de alguien hablando inmediatamente de mí para recuperar la atención?", oracion:"Señor, perdóname por robar el momento ajeno para protagonizar el mío. Dame un corazón que honre sinceramente a los demás.", ref:"Filipenses 2:3" }
+      { id:9,  texto:"¿Fui hipócrita al adular a alguien por fuera mientras por dentro sentía desprecio?", oracion:"Señor, perdóname por la doblez de mi corazón. Crea en mí una sinceridad genuina y líbrame de toda hipocresía.", ref:"Santiago 3:17", categoria:"hipocresia" },
+      { id:10, texto:"¿Hice favores o buenas acciones esperando reconocimiento o un favor de vuelta?", oracion:"Padre, perdóname por servir buscando mi propia gloria. Que mis obras sean hechas solo para Tu honra, en secreto si es necesario.", ref:"Mateo 6:3-4", categoria:"orgullo" },
+      { id:11, texto:"¿Exageré o alteré historias para proyectar una imagen más exitosa o inteligente de mí?", oracion:"Señor, Tú eres Dios de verdad. Perdóname por adornar la realidad para parecer más de lo que soy. Que me baste con Tu aprobación.", ref:"Proverbios 12:22", categoria:"orgullo" },
+      { id:12, texto:"¿Retuve ofensas del día alimentando el resentimiento en lugar de decidir perdonar?", oracion:"Padre, así como Tú en Cristo me perdonaste, dame la gracia de perdonar también. Sana mi corazón del resentimiento que cargo hoy.", ref:"Efesios 4:32", categoria:"resentimiento" },
+      { id:13, texto:"¿Practiqué hostilidad pasiva (ley del hielo, sarcasmo) con quien me ofendió?", oracion:"Señor, perdóname por el castigo silencioso que ejercí. Dame valentía para hablar con verdad y amor, y no herir con el silencio.", ref:"Mateo 18:15", categoria:"impaciencia" },
+      { id:14, texto:"¿Deseé secretamente que le fuera mal o que fuera expuesta una persona que me hirió?", oracion:"Dios mío, perdóname por ese deseo oscuro. Transforma mi corazón para bendecir a quienes me lastiman, como Tú mismo me enseñaste.", ref:"Romanos 12:14", categoria:"resentimiento" },
+      { id:15, texto:"¿Hablé de los defectos o vida privada de alguien que no estaba presente para defenderse?", oracion:"Señor, perdóname por herir con mis palabras a quien no pudo defenderse. Pon guarda a mi boca y guárdame de destruir con la lengua.", ref:"Salmo 141:3", categoria:"chisme" },
+      { id:16, texto:"¿Disfracé el chisme o murmuración como preocupación legítima o 'motivo de oración'?", oracion:"Padre, perdóname por usar palabras piadosas para encubrir la murmuración. Que mi intercesión sea real y mi lengua, limpia.", ref:"Proverbios 20:19", categoria:"chisme" },
+      { id:17, texto:"¿Fui áspero, hiriente o impaciente con empleados, subordinados, pareja o familia?", oracion:"Señor, perdóname por la dureza con que traté a quienes pusiste bajo mi cuidado. Viste Tu mansedumbre en mi trato cotidiano.", ref:"Colosenses 3:12", categoria:"impaciencia" },
+      { id:18, texto:"¿Sentí molestia, celos o incomodidad ante el éxito o prosperidad de otra persona?", oracion:"Dios mío, perdóname por la envidia que empañó mi corazón. Enséñame a celebrar el bien ajeno como si fuera propio.", ref:"1 Corintios 13:4", categoria:"envidia" },
+      { id:19, texto:"¿Me alegré secretamente del fracaso o de una equivocación cometida por mi competencia?", oracion:"Padre, perdóname por ese gozo maligno. Que jamás me alegre del mal de nadie, sino que aprenda a llorar con los que lloran.", ref:"Proverbios 24:17", categoria:"envidia" },
+      { id:20, texto:"¿Eclipsé el logro de alguien hablando inmediatamente de mí para recuperar la atención?", oracion:"Señor, perdóname por robar el momento ajeno para protagonizar el mío. Dame un corazón que honre sinceramente a los demás.", ref:"Filipenses 2:3", categoria:"orgullo" }
     ]
   },
   {
     titulo: "M3: PUREZA DE LA MENTE",
     items: [
-      { id:21, texto:"¿Permití que mi mente se deleitara en pensamientos impuros, lujuria o pornografía mental?", oracion:"Dios santo, perdóname por lo que alimenté en mi mente hoy. Renueva mis pensamientos y guárdalos en todo lo que es puro y verdadero.", ref:"Filipenses 4:8" },
-      { id:22, texto:"¿Maquiné discusiones o venganzas imaginarias ensayando peleas en mi cabeza?", oracion:"Señor, perdóname por las batallas que peleé en mi mente. Lleva todo pensamiento cautivo a la obediencia de Cristo.", ref:"2 Corintios 10:5" },
-      { id:23, texto:"¿Consumí contenido visual o auditivo dañino (morbo, violencia, chismes) que alteró mi paz?", oracion:"Padre, perdóname por lo que permití entrar por mis ojos y oídos. Aparta mi vista de cosas vanas y guarda mi corazón.", ref:"Salmo 101:3" }
+      { id:21, texto:"¿Permití que mi mente se deleitara en pensamientos impuros, lujuria o pornografía mental?", oracion:"Dios santo, perdóname por lo que alimenté en mi mente hoy. Renueva mis pensamientos y guárdalos en todo lo que es puro y verdadero.", ref:"Filipenses 4:8", categoria:"lujuria" },
+      { id:22, texto:"¿Maquiné discusiones o venganzas imaginarias ensayando peleas en mi cabeza?", oracion:"Señor, perdóname por las batallas que peleé en mi mente. Lleva todo pensamiento cautivo a la obediencia de Cristo.", ref:"2 Corintios 10:5", categoria:"resentimiento" },
+      { id:23, texto:"¿Consumí contenido visual o auditivo dañino (morbo, violencia, chismes) que alteró mi paz?", oracion:"Padre, perdóname por lo que permití entrar por mis ojos y oídos. Aparta mi vista de cosas vanas y guarda mi corazón.", ref:"Salmo 101:3", categoria:"atencion" }
     ]
   },
   {
     titulo: "M4: ESTABILIDAD ANTE UNO MISMO",
     items: [
-      { id:24, texto:"¿Abracé el desánimo o victimismo diciendo que todo me sale mal y nadie me quiere?", oracion:"Señor, perdóname por rendirme al desánimo como si Tú no estuvieras. Recuérdame que nada me puede separar de Tu amor.", ref:"Romanos 8:38-39" },
-      { id:25, texto:"¿Utilicé la autocompasión para evadir mis responsabilidades y culpar a mis circunstancias?", oracion:"Padre, perdóname por refugiarme en la lástima en lugar de levantarme en Tu fuerza. Que Tu gracia me mueva a actuar.", ref:"Filipenses 4:13" },
-      { id:26, texto:"¿Dudé del amor y la fidelidad de Dios permitiendo que la ansiedad ahogara mi fe?", oracion:"Dios mío, perdóname por la desconfianza. Deposito hoy mis cargas en Ti, pues Tú cuidas de mí y Tu fidelidad no falla.", ref:"1 Pedro 5:7" }
+      { id:24, texto:"¿Abracé el desánimo o victimismo diciendo que todo me sale mal y nadie me quiere?", oracion:"Señor, perdóname por rendirme al desánimo como si Tú no estuvieras. Recuérdame que nada me puede separar de Tu amor.", ref:"Romanos 8:38-39", categoria:"desanimo" },
+      { id:25, texto:"¿Utilicé la autocompasión para evadir mis responsabilidades y culpar a mis circunstancias?", oracion:"Padre, perdóname por refugiarme en la lástima en lugar de levantarme en Tu fuerza. Que Tu gracia me mueva a actuar.", ref:"Filipenses 4:13", categoria:"victimismo" },
+      { id:26, texto:"¿Dudé del amor y la fidelidad de Dios permitiendo que la ansiedad ahogara mi fe?", oracion:"Dios mío, perdóname por la desconfianza. Deposito hoy mis cargas en Ti, pues Tú cuidas de mí y Tu fidelidad no falla.", ref:"1 Pedro 5:7", categoria:"ansiedad" }
     ]
   },
   {
     titulo: "M5: HONESTIDAD INTELECTUAL",
     items: [
-      { id:27, texto:"¿Justifiqué mis malas acciones excusándome en el cansancio, el tráfico o la provocación?", oracion:"Señor, perdóname por esconderme tras las circunstancias. Dame la honradez de asumir mis faltas sin pretextos.", ref:"Proverbios 28:13" },
-      { id:28, texto:"¿Fui estricto para juzgar fallos ajenos pero permisivo e indulgente con los míos?", oracion:"Padre, perdóname por la vara doble con que mido. Que examine primero la viga en mi propio ojo antes de señalar la paja ajena.", ref:"Mateo 7:3" },
-      { id:29, texto:"¿Intenté esconder un mal comportamiento del día sin intención real de enmendarlo?", oracion:"Dios mío, Tú lo ves todo. Perdóname por el encubrimiento. Que la luz de Tu verdad exponga lo que debo confesar y corregir.", ref:"1 Juan 1:9" }
+      { id:27, texto:"¿Justifiqué mis malas acciones excusándome en el cansancio, el tráfico o la provocación?", oracion:"Señor, perdóname por esconderme tras las circunstancias. Dame la honradez de asumir mis faltas sin pretextos.", ref:"Proverbios 28:13", categoria:"orgullo" },
+      { id:28, texto:"¿Fui estricto para juzgar fallos ajenos pero permisivo e indulgente con los míos?", oracion:"Padre, perdóname por la vara doble con que mido. Que examine primero la viga en mi propio ojo antes de señalar la paja ajena.", ref:"Mateo 7:3", categoria:"hipocresia" },
+      { id:29, texto:"¿Intenté esconder un mal comportamiento del día sin intención real de enmendarlo?", oracion:"Dios mío, Tú lo ves todo. Perdóname por el encubrimiento. Que la luz de Tu verdad exponga lo que debo confesar y corregir.", ref:"1 Juan 1:9", categoria:"orgullo" }
     ]
   },
   {
     titulo: "M6: USO DE LOS RECURSOS",
     items: [
-      { id:30, texto:"¿Desperdicié horas valiosas en procrastinación destructiva (redes, teléfono compulsivo)?", oracion:"Señor, perdóname por malgastar el tiempo que me diste. Enséñame a numerar mis días y a redimir cada hora para Tu gloria.", ref:"Efesios 5:16" },
-      { id:31, texto:"¿Trabajé o estudié con desgano o mediocridad sabiendo que podía dar un esfuerzo honesto?", oracion:"Padre, perdóname por la mediocridad de hoy. Que todo lo que haga mañana lo haga de corazón, como para Ti y no para los hombres.", ref:"Colosenses 3:23" },
-      { id:32, texto:"¿Maltraté mi cuerpo mediante glotonería, sustancias dañinas o privación extrema de sueño?", oracion:"Dios mío, perdóname por descuidar el templo que me confiaste. Dame sabiduría para cuidar este cuerpo para Tu honra.", ref:"1 Corintios 6:19-20" }
+      { id:30, texto:"¿Desperdicié horas valiosas en procrastinación destructiva (redes, teléfono compulsivo)?", oracion:"Señor, perdóname por malgastar el tiempo que me diste. Enséñame a numerar mis días y a redimir cada hora para Tu gloria.", ref:"Efesios 5:16", categoria:"procrastinacion" },
+      { id:31, texto:"¿Trabajé o estudié con desgano o mediocridad sabiendo que podía dar un esfuerzo honesto?", oracion:"Padre, perdóname por la mediocridad de hoy. Que todo lo que haga mañana lo haga de corazón, como para Ti y no para los hombres.", ref:"Colosenses 3:23", categoria:"pereza" },
+      { id:32, texto:"¿Maltraté mi cuerpo mediante glotonería, sustancias dañinas o privación extrema de sueño?", oracion:"Dios mío, perdóname por descuidar el templo que me confiaste. Dame sabiduría para cuidar este cuerpo para Tu honra.", ref:"1 Corintios 6:19-20", categoria:"autocuidado" }
     ]
   }
 ];
 
 let moduloActual = 0;
 let respuestas = {};
+let ejercicioActual = { itemId: null, accion: '' };
 
-// --- Recordatorios configurables ---
+// ==================== EJERCICIOS MENTALES POR CATEGORÍA ====================
+const ejerciciosMental = {
+  orgullo: {
+    titulo: "Visualización de Humildad",
+    pasos: [
+      "Recuerda el momento exacto en que actuaste con orgullo o soberbia.",
+      "Visualiza la misma escena, pero ahora reconoces tu límite o pides ayuda.",
+      "Imagina cómo se siente alivio en lugar de necesidad de demostrar superioridad."
+    ],
+    pregunta: "¿Qué acción concreta harás mañana para practicar humildad?"
+  },
+  impaciencia: {
+    titulo: "Reentrenamiento de la Respuesta",
+    pasos: [
+      "Respira profundamente 3 veces (inhala 4 seg, exhala 4 seg).",
+      "Recuerda el momento en que fuiste impaciente o áspero.",
+      "Visualiza la misma escena, pero ahora respondes con 3 segundos de pausa y tono más bajo."
+    ],
+    pregunta: "Escribe UNA señal temprana de impaciencia (ej. apretar mandíbula) y qué harás al notarla:"
+  },
+  ansiedad: {
+    titulo: "Anclaje en el Presente",
+    pasos: [
+      "Nombra 3 cosas que ves, 2 que oyes, 1 que sientes (técnica 3-2-1).",
+      "Recuerda que Dios ya está en tu mañana. No necesitas controlarlo todo.",
+      "Visualiza soltar la preocupación como una hoja que se aleja flotando."
+    ],
+    pregunta: "¿Qué recordatorio visual o palabra pondrás para anclarte en el presente mañana?"
+  },
+  envidia: {
+    titulo: "Reencuadre de la Comparación",
+    pasos: [
+      "Identifica a quién envidiaste y por qué.",
+      "Visualiza que su éxito no te resta nada; el tuyo también puede llegar.",
+      "Practica bendecirle mentalmente: 'Que le vaya bien, yo tengo mi propio camino'."
+    ],
+    pregunta: "¿Qué cualidad tuya (no competitiva) puedes celebrar hoy?"
+  },
+  resentimiento: {
+    titulo: "Ensayo de Perdón",
+    pasos: [
+      "Nombra la ofensa que guardas. Reconoce que el rencor te daña más a ti.",
+      "Visualiza que devuelves la deuda emocional (como soltar una carga).",
+      "Decide: ¿lo hablarás o lo soltarás sin hablar?"
+    ],
+    pregunta: "¿Qué acción tomarás mañana respecto a esta ofensa (hablar, soltar, establecer límite sano)?"
+  },
+  chisme: {
+    titulo: "Freno Lingüístico",
+    pasos: [
+      "Recuerda cuándo hablaste de alguien ausente.",
+      "Visualiza que, antes de hablar, preguntas: '¿Esto edifica? ¿Está presente?'",
+      "Imagina cambiar el tema hacia algo positivo o útil."
+    ],
+    pregunta: "¿Qué frase usarás para desviar un chisme mañana? (ej. 'Mejor hablemos de cómo ayudarle')"
+  },
+  queja: {
+    titulo: "Cambio de Enfoque",
+    pasos: [
+      "Reconoce de qué te quejaste.",
+      "Visualiza que, en lugar de quejar, identificas 1 cosa buena de esa situación.",
+      "Practica decir esa cosa buena en voz alta mentalmente."
+    ],
+    pregunta: "¿Qué 1 bendición oculta tenía aquello que te molestó?"
+  },
+  gratitud: {
+    titulo: "Anclaje de Gratitud",
+    pasos: [
+      "Cierra ojos. Respira 3 veces.",
+      "Recuerda 3 bendiciones concretas de hoy (por pequeñas que sean).",
+      "Visualiza dar gracias explícitamente a Dios o a la persona."
+    ],
+    pregunta: "¿A quién expresarás gratitud mañana y cómo?"
+  },
+  atencion: {
+    titulo: "Entrenamiento Atencional",
+    pasos: [
+      "Identifica qué te distrajo (pantallas, pensamientos, ruido).",
+      "Visualiza que, al notar la distracción, vuelves suavemente a lo que importa.",
+      "Practica 1 minuto de respiración consciente ahora."
+    ],
+    pregunta: "¿Qué límite pondrás a tu principal distractor mañana?"
+  },
+  pereza: {
+    titulo: "Activación Conductual",
+    pasos: [
+      "Reconoce la tarea que postergaste.",
+      "Visualiza hacer solo los primeros 2 minutos de esa tarea (sin compromiso de terminarla).",
+      "Imagina la satisfacción de haber empezado."
+    ],
+    pregunta: "¿Qué tarea harás mañana durante solo 5 minutos (sin presión de terminarla)?"
+  },
+  procrastinacion: {
+    titulo: "Técnica Pomodoro Mental",
+    pasos: [
+      "Identifica la tarea que evitaste.",
+      "Visualiza trabajando en ella por 5 minutos sin interrupciones.",
+      "Imagina poner un temporizador y darte permiso para parar después."
+    ],
+    pregunta: "¿Cuándo pondrás tu temporizador de 5 minutos mañana?"
+  },
+  victimismo: {
+    titulo: "Responsabilidad Gradual",
+    pasos: [
+      "Reconoce dónde culpaste a otros o a las circunstancias.",
+      "Visualiza qué pequeño paso TÚ podrías dar (aunque sea mínimo).",
+      "Imagina ese paso y cómo te sentirías."
+    ],
+    pregunta: "¿Qué 1 pequeña acción puedes hacer mañana (aunque no solucione todo)?"
+  },
+  lujuria: {
+    titulo: "Redirección de la Mirada",
+    pasos: [
+      "Identifica el estímulo o pensamiento que disparó la lujuria.",
+      "Visualiza apartar la mirada o cambiar de pensamiento inmediatamente.",
+      "Practica redirigir tu atención a algo neutral o edificante."
+    ],
+    pregunta: "¿Qué harás en el momento exacto que notes el pensamiento (ej. respirar, cambiar de app)?"
+  },
+  hipocresia: {
+    titulo: "Autenticidad Gradual",
+    pasos: [
+      "Recuerda dónde aparentaste lo que no sientes.",
+      "Visualiza decir algo más honesto pero amable (ej. 'No estoy de acuerdo, pero te escucho').",
+      "Nota que la autenticidad no exige rudeza."
+    ],
+    pregunta: "¿Qué opinión verdadera expresarás mañana con amabilidad?"
+  },
+  egoismo: {
+    titulo: "Enfoque en el Otro",
+    pasos: [
+      "Recuerda un momento en que solo pensaste en ti.",
+      "Visualiza preguntar genuinamente por el otro antes de hablar de ti.",
+      "Practica escuchar sin interrumpir durante 1 minuto."
+    ],
+    pregunta: "¿A quién escucharás activamente mañana sin interrumpir?"
+  },
+  desanimo: {
+    titulo: "Micro-logro",
+    pasos: [
+      "Reconoce la sensación de 'todo sale mal'.",
+      "Visualiza completar UNA tarea mínima (lavarte la cara, ordenar un cajón).",
+      "Imagina la sensación de haber logrado eso."
+    ],
+    pregunta: "¿Qué tarea mínima (menos de 2 minutos) harás mañana para generar impulso?"
+  },
+  autocuidado: {
+    titulo: "Señal Corporal",
+    pasos: [
+      "Identifica qué señal corporal ignoraste (hambre, cansancio, tensión).",
+      "Visualiza atender esa señal amablemente (descansar, comer despacio, estirarte).",
+      "Recuerda que tu cuerpo no es un enemigo."
+    ],
+    pregunta: "¿Qué harás mañana para atender UNA señal de tu cuerpo?"
+  },
+  default: {
+    titulo: "Respiración y Acción",
+    pasos: [
+      "Respira profundamente 3 veces.",
+      "Visualiza la situación en que fallaste.",
+      "Imagina una respuesta alternativa más sana.",
+      "Escribe un compromiso concreto."
+    ],
+    pregunta: "¿Qué acción concreta harás mañana diferente?"
+  }
+};
+
+function obtenerEjercicioPorCategoria(categoria) {
+  return ejerciciosMental[categoria] || ejerciciosMental.default;
+}
+
+function abrirEjercicioMental(itemId, textoPregunta, categoria) {
+  const ejercicio = obtenerEjercicioPorCategoria(categoria);
+  ejercicioActual = { itemId, accion: '' };
+  
+  const modalBody = document.getElementById('modal-body');
+  modalBody.innerHTML = `
+    <p style="margin-bottom: 16px; color: var(--muted); font-size: 13px;">
+      <strong>Falta detectada:</strong> ${textoPregunta}
+    </p>
+    <div class="exercise-step">
+      <h4>📌 PASO 1: RESPIRACIÓN (20 seg)</h4>
+      <p>Inhala 4 segundos, sostén 2 seg, exhala 4 seg. Repite 3 veces.</p>
+    </div>
+    <div class="exercise-step">
+      <h4>🎯 ${ejercicio.titulo}</h4>
+      ${ejercicio.pasos.map((p, i) => `<p><strong>${i+1}.</strong> ${p}</p>`).join('')}
+    </div>
+    <div class="exercise-step">
+      <h4>✍️ COMPROMISO CONCRETO</h4>
+      <p>${ejercicio.pregunta}</p>
+      <textarea id="accionTexto" rows="3" placeholder="Escribe aquí tu acción concreta..."></textarea>
+    </div>
+    <p style="font-size: 11px; color: var(--muted); margin-top: 12px;">
+      📖 Basado en estudios de ensayo conductual (Bjaastad et al., 2025) y atención plena.
+      No "reprograma el inconsciente", pero ayuda a ensayar respuestas más sanas.
+    </p>
+  `;
+  
+  document.getElementById('mentalModal').classList.add('active');
+}
+
+function guardarAccion() {
+  const accion = document.getElementById('accionTexto')?.value || '';
+  if (accion.trim()) {
+    const acciones = JSON.parse(localStorage.getItem('acciones_compromiso') || '[]');
+    acciones.push({
+      fecha: new Date().toISOString(),
+      itemId: ejercicioActual.itemId,
+      accion: accion.trim()
+    });
+    localStorage.setItem('acciones_compromiso', JSON.stringify(acciones));
+    showToast("✓ Acción guardada. Revísala mañana.");
+  } else {
+    showToast("Escribe una acción concreta antes de guardar");
+    return;
+  }
+  cerrarModal();
+}
+
+function cerrarModal() {
+  document.getElementById('mentalModal').classList.remove('active');
+  ejercicioActual = { itemId: null, accion: '' };
+}
+
+// --- Recordatorios ---
 function solicitarPermisoYProgramar() {
   if (!("Notification" in window)) {
     showToast("❌ Este navegador no soporta notificaciones");
@@ -477,8 +743,7 @@ function verificarYNotificar() {
     if (ultimaNotif === hoyStr) return;
     localStorage.setItem("ultimaNotifFecha", hoyStr);
     new Notification("🔍 AUTOEXAMEN DIARIO", {
-      body: "Tómate 5 minutos para revisar tu corazón. 'Guarda tu corazón con toda diligencia' Proverbios 4:23",
-      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234274ea'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='monospace'%3E🔍%3C/text%3E%3C/svg%3E"
+      body: "Tómate 5 minutos para revisar tu corazón. 'Guarda tu corazón con toda diligencia' Proverbios 4:23"
     });
   }
 }
@@ -492,6 +757,7 @@ function cargarHoraGuardada() {
   if (Notification.permission === "granted") programarRecordatorio();
 }
 
+// --- Funciones principales de la app ---
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -582,6 +848,9 @@ function generarDiagnostico() {
               <span class="oracion-ref">— ${item.ref}</span>
             </div>
           </div>
+          <button class="btn btn-mental" onclick="abrirEjercicioMental(${item.id}, '${item.texto.replace(/'/g, "\\'")}', '${item.categoria}')">
+            🧠 EJERCICIO MENTAL
+          </button>
         `;
         container.appendChild(card);
       }
