@@ -271,18 +271,6 @@
     font-size: 14px;
     line-height: 1.6;
   }
-  .modal-content textarea {
-    width: 100%;
-    padding: 12px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'Lato', sans-serif;
-    font-size: 13px;
-    margin: 10px 0;
-    resize: vertical;
-  }
   .modal-close {
     position: absolute;
     top: 12px;
@@ -391,8 +379,7 @@
     <h3>🧠 EJERCICIO MENTAL</h3>
     <div id="modal-body"></div>
     <div class="modal-footer">
-      <button class="btn" onclick="guardarAccion()">GUARDAR ACCIÓN</button>
-      <button class="btn btn-outline" onclick="cerrarModal()">CERRAR</button>
+      <button class="btn" onclick="cerrarModal()">CERRAR</button>
     </div>
   </div>
 </div>
@@ -477,7 +464,6 @@ const BANCO = [
 
 let moduloActual = 0;
 let respuestas = {};
-let ejercicioActual = { itemId: null, accion: '' };
 
 // ==================== EJERCICIOS MENTALES POR CATEGORÍA ====================
 const ejerciciosMental = {
@@ -487,8 +473,7 @@ const ejerciciosMental = {
       "Recuerda el momento exacto en que actuaste con orgullo o soberbia.",
       "Visualiza la misma escena, pero ahora reconoces tu límite o pides ayuda.",
       "Imagina cómo se siente alivio en lugar de necesidad de demostrar superioridad."
-    ],
-    pregunta: "¿Qué acción concreta harás mañana para practicar humildad?"
+    ]
   },
   impaciencia: {
     titulo: "Reentrenamiento de la Respuesta",
@@ -496,8 +481,7 @@ const ejerciciosMental = {
       "Respira profundamente 3 veces (inhala 4 seg, exhala 4 seg).",
       "Recuerda el momento en que fuiste impaciente o áspero.",
       "Visualiza la misma escena, pero ahora respondes con 3 segundos de pausa y tono más bajo."
-    ],
-    pregunta: "Escribe UNA señal temprana de impaciencia (ej. apretar mandíbula) y qué harás al notarla:"
+    ]
   },
   ansiedad: {
     titulo: "Anclaje en el Presente",
@@ -505,8 +489,7 @@ const ejerciciosMental = {
       "Nombra 3 cosas que ves, 2 que oyes, 1 que sientes (técnica 3-2-1).",
       "Recuerda que Dios ya está en tu mañana. No necesitas controlarlo todo.",
       "Visualiza soltar la preocupación como una hoja que se aleja flotando."
-    ],
-    pregunta: "¿Qué recordatorio visual o palabra pondrás para anclarte en el presente mañana?"
+    ]
   },
   envidia: {
     titulo: "Reencuadre de la Comparación",
@@ -514,8 +497,7 @@ const ejerciciosMental = {
       "Identifica a quién envidiaste y por qué.",
       "Visualiza que su éxito no te resta nada; el tuyo también puede llegar.",
       "Practica bendecirle mentalmente: 'Que le vaya bien, yo tengo mi propio camino'."
-    ],
-    pregunta: "¿Qué cualidad tuya (no competitiva) puedes celebrar hoy?"
+    ]
   },
   resentimiento: {
     titulo: "Ensayo de Perdón",
@@ -523,8 +505,7 @@ const ejerciciosMental = {
       "Nombra la ofensa que guardas. Reconoce que el rencor te daña más a ti.",
       "Visualiza que devuelves la deuda emocional (como soltar una carga).",
       "Decide: ¿lo hablarás o lo soltarás sin hablar?"
-    ],
-    pregunta: "¿Qué acción tomarás mañana respecto a esta ofensa (hablar, soltar, establecer límite sano)?"
+    ]
   },
   chisme: {
     titulo: "Freno Lingüístico",
@@ -532,8 +513,7 @@ const ejerciciosMental = {
       "Recuerda cuándo hablaste de alguien ausente.",
       "Visualiza que, antes de hablar, preguntas: '¿Esto edifica? ¿Está presente?'",
       "Imagina cambiar el tema hacia algo positivo o útil."
-    ],
-    pregunta: "¿Qué frase usarás para desviar un chisme mañana? (ej. 'Mejor hablemos de cómo ayudarle')"
+    ]
   },
   queja: {
     titulo: "Cambio de Enfoque",
@@ -541,8 +521,7 @@ const ejerciciosMental = {
       "Reconoce de qué te quejaste.",
       "Visualiza que, en lugar de quejar, identificas 1 cosa buena de esa situación.",
       "Practica decir esa cosa buena en voz alta mentalmente."
-    ],
-    pregunta: "¿Qué 1 bendición oculta tenía aquello que te molestó?"
+    ]
   },
   gratitud: {
     titulo: "Anclaje de Gratitud",
@@ -550,8 +529,7 @@ const ejerciciosMental = {
       "Cierra ojos. Respira 3 veces.",
       "Recuerda 3 bendiciones concretas de hoy (por pequeñas que sean).",
       "Visualiza dar gracias explícitamente a Dios o a la persona."
-    ],
-    pregunta: "¿A quién expresarás gratitud mañana y cómo?"
+    ]
   },
   atencion: {
     titulo: "Entrenamiento Atencional",
@@ -559,8 +537,7 @@ const ejerciciosMental = {
       "Identifica qué te distrajo (pantallas, pensamientos, ruido).",
       "Visualiza que, al notar la distracción, vuelves suavemente a lo que importa.",
       "Practica 1 minuto de respiración consciente ahora."
-    ],
-    pregunta: "¿Qué límite pondrás a tu principal distractor mañana?"
+    ]
   },
   pereza: {
     titulo: "Activación Conductual",
@@ -568,8 +545,7 @@ const ejerciciosMental = {
       "Reconoce la tarea que postergaste.",
       "Visualiza hacer solo los primeros 2 minutos de esa tarea (sin compromiso de terminarla).",
       "Imagina la satisfacción de haber empezado."
-    ],
-    pregunta: "¿Qué tarea harás mañana durante solo 5 minutos (sin presión de terminarla)?"
+    ]
   },
   procrastinacion: {
     titulo: "Técnica Pomodoro Mental",
@@ -577,8 +553,7 @@ const ejerciciosMental = {
       "Identifica la tarea que evitaste.",
       "Visualiza trabajando en ella por 5 minutos sin interrupciones.",
       "Imagina poner un temporizador y darte permiso para parar después."
-    ],
-    pregunta: "¿Cuándo pondrás tu temporizador de 5 minutos mañana?"
+    ]
   },
   victimismo: {
     titulo: "Responsabilidad Gradual",
@@ -586,8 +561,7 @@ const ejerciciosMental = {
       "Reconoce dónde culpaste a otros o a las circunstancias.",
       "Visualiza qué pequeño paso TÚ podrías dar (aunque sea mínimo).",
       "Imagina ese paso y cómo te sentirías."
-    ],
-    pregunta: "¿Qué 1 pequeña acción puedes hacer mañana (aunque no solucione todo)?"
+    ]
   },
   lujuria: {
     titulo: "Redirección de la Mirada",
@@ -595,8 +569,7 @@ const ejerciciosMental = {
       "Identifica el estímulo o pensamiento que disparó la lujuria.",
       "Visualiza apartar la mirada o cambiar de pensamiento inmediatamente.",
       "Practica redirigir tu atención a algo neutral o edificante."
-    ],
-    pregunta: "¿Qué harás en el momento exacto que notes el pensamiento (ej. respirar, cambiar de app)?"
+    ]
   },
   hipocresia: {
     titulo: "Autenticidad Gradual",
@@ -604,8 +577,7 @@ const ejerciciosMental = {
       "Recuerda dónde aparentaste lo que no sientes.",
       "Visualiza decir algo más honesto pero amable (ej. 'No estoy de acuerdo, pero te escucho').",
       "Nota que la autenticidad no exige rudeza."
-    ],
-    pregunta: "¿Qué opinión verdadera expresarás mañana con amabilidad?"
+    ]
   },
   egoismo: {
     titulo: "Enfoque en el Otro",
@@ -613,8 +585,7 @@ const ejerciciosMental = {
       "Recuerda un momento en que solo pensaste en ti.",
       "Visualiza preguntar genuinamente por el otro antes de hablar de ti.",
       "Practica escuchar sin interrumpir durante 1 minuto."
-    ],
-    pregunta: "¿A quién escucharás activamente mañana sin interrumpir?"
+    ]
   },
   desanimo: {
     titulo: "Micro-logro",
@@ -622,8 +593,7 @@ const ejerciciosMental = {
       "Reconoce la sensación de 'todo sale mal'.",
       "Visualiza completar UNA tarea mínima (lavarte la cara, ordenar un cajón).",
       "Imagina la sensación de haber logrado eso."
-    ],
-    pregunta: "¿Qué tarea mínima (menos de 2 minutos) harás mañana para generar impulso?"
+    ]
   },
   autocuidado: {
     titulo: "Señal Corporal",
@@ -631,18 +601,15 @@ const ejerciciosMental = {
       "Identifica qué señal corporal ignoraste (hambre, cansancio, tensión).",
       "Visualiza atender esa señal amablemente (descansar, comer despacio, estirarte).",
       "Recuerda que tu cuerpo no es un enemigo."
-    ],
-    pregunta: "¿Qué harás mañana para atender UNA señal de tu cuerpo?"
+    ]
   },
   default: {
     titulo: "Respiración y Acción",
     pasos: [
       "Respira profundamente 3 veces.",
       "Visualiza la situación en que fallaste.",
-      "Imagina una respuesta alternativa más sana.",
-      "Escribe un compromiso concreto."
-    ],
-    pregunta: "¿Qué acción concreta harás mañana diferente?"
+      "Imagina una respuesta alternativa más sana."
+    ]
   }
 };
 
@@ -652,7 +619,6 @@ function obtenerEjercicioPorCategoria(categoria) {
 
 function abrirEjercicioMental(itemId, textoPregunta, categoria) {
   const ejercicio = obtenerEjercicioPorCategoria(categoria);
-  ejercicioActual = { itemId, accion: '' };
   
   const modalBody = document.getElementById('modal-body');
   modalBody.innerHTML = `
@@ -668,40 +634,19 @@ function abrirEjercicioMental(itemId, textoPregunta, categoria) {
       ${ejercicio.pasos.map((p, i) => `<p><strong>${i+1}.</strong> ${p}</p>`).join('')}
     </div>
     <div class="exercise-step">
-      <h4>✍️ COMPROMISO CONCRETO</h4>
-      <p>${ejercicio.pregunta}</p>
-      <textarea id="accionTexto" rows="3" placeholder="Escribe aquí tu acción concreta..."></textarea>
+      <h4>🙏 CIERRE</h4>
+      <p>Lleva contigo esta imagen mental. La repetición de estos ensayos mejora la respuesta automática.</p>
     </div>
     <p style="font-size: 11px; color: var(--muted); margin-top: 12px;">
       📖 Basado en estudios de ensayo conductual (Bjaastad et al., 2025) y atención plena.
-      No "reprograma el inconsciente", pero ayuda a ensayar respuestas más sanas.
     </p>
   `;
   
   document.getElementById('mentalModal').classList.add('active');
 }
 
-function guardarAccion() {
-  const accion = document.getElementById('accionTexto')?.value || '';
-  if (accion.trim()) {
-    const acciones = JSON.parse(localStorage.getItem('acciones_compromiso') || '[]');
-    acciones.push({
-      fecha: new Date().toISOString(),
-      itemId: ejercicioActual.itemId,
-      accion: accion.trim()
-    });
-    localStorage.setItem('acciones_compromiso', JSON.stringify(acciones));
-    showToast("✓ Acción guardada. Revísala mañana.");
-  } else {
-    showToast("Escribe una acción concreta antes de guardar");
-    return;
-  }
-  cerrarModal();
-}
-
 function cerrarModal() {
   document.getElementById('mentalModal').classList.remove('active');
-  ejercicioActual = { itemId: null, accion: '' };
 }
 
 // --- Recordatorios ---
