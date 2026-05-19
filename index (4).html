@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autoexamen</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #191b22;
+    --bg2: #23263a;
+    --card: #1e2130;
+    --card-alert: #2b1315;
+    --accent: #4274ea;
+    --danger: #c0392b;
+    --text: #e8e8f0;
+    --muted: #7b7f99;
+    --success: #27ae60;
+    --border: #2e3250;
+    --gold: #c9a84c;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Lato', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    margin: 0;
+  }
+
+  .screen { display: none; width: 100%; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  .topbar {
+    padding: 18px 16px 14px;
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar .back-btn {
+    background: none; border: none; color: var(--accent);
+    font-size: 22px; cursor: pointer; padding: 0 6px; line-height: 1;
+  }
+  .topbar h2 {
+    font-family: 'Cinzel', serif; font-size: 12px;
+    letter-spacing: 1.5px; color: var(--text);
+    flex: 1; text-align: center; text-transform: uppercase;
+  }
+  .topbar .spacer { width: 34px; }
+
+  #menu {
+    justify-content: center; align-items: center;
+    padding: 40px 32px; text-align: center;
+    background: radial-gradient(ellipse at 50% 30%, #1e2a4a 0%, var(--bg) 70%);
+    min-height: 100vh;
+  }
+  .menu-icon { font-size: 52px; margin-bottom: 24px; }
+  .menu-title {
+    font-family: 'Cinzel', serif; font-size: 30px;
+    font-weight: 700; letter-spacing: 6px; color: #fff; margin-bottom: 18px;
+  }
+  .menu-verse {
+    color: var(--muted); font-size: 14px; line-height: 1.7;
+    max-width: 320px; margin: 0 auto 50px; font-style: italic;
+  }
+  .menu-verse span { display: block; font-size: 11px; margin-top: 6px; color: var(--accent); font-style: normal; letter-spacing: 1px; }
+
+  .btn {
+    display: block; width: 100%; max-width: 340px;
+    padding: 17px 20px; background: var(--accent); color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'Lato', sans-serif; font-size: 13px;
+    font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    box-shadow: 0 4px 20px rgba(66,116,234,0.35);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(66,116,234,0.45); }
+  .btn:active { transform: translateY(0); opacity: 0.88; }
+  .btn-danger { background: var(--danger); box-shadow: 0 4px 20px rgba(192,57,43,0.35); }
+  .btn-danger:hover { box-shadow: 0 8px 28px rgba(192,57,43,0.45); }
+
+  .progress-wrap { padding: 14px 20px 8px; background: var(--bg2); border-bottom: 1px solid var(--border); }
+  .progress-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-bottom: 7px; text-transform: uppercase; display: flex; justify-content: space-between; }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+
+  .questions-scroll { flex: 1; overflow-y: auto; padding: 20px 16px 10px; display: flex; flex-direction: column; gap: 14px; }
+  .question-card {
+    background: var(--card); border-radius: 12px;
+    border: 1px solid var(--border); padding: 16px 14px;
+    display: flex; align-items: center; gap: 14px;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  }
+  .question-card:hover { border-color: var(--accent); transform: translateX(2px); }
+  .question-card.checked { background: #1b2540; border-color: var(--danger); }
+  .question-card.checked .q-text { color: #f8c0bc; }
+  .q-text { flex: 1; font-size: 14px; line-height: 1.6; color: var(--text); transition: color 0.2s; }
+  .q-check {
+    width: 26px; height: 26px; min-width: 26px;
+    border-radius: 6px; border: 2px solid var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; font-size: 15px; color: transparent; background: transparent;
+  }
+  .question-card.checked .q-check { border-color: var(--danger); background: var(--danger); color: #fff; }
+
+  .bottom-action { padding: 16px; background: var(--bg2); border-top: 1px solid var(--border); }
+
+  #diagnostico { background: var(--bg); }
+  #diagnostico .topbar { background: #3a1012; border-color: #5a1a1a; }
+  #diagnostico .topbar h2 { color: #f8c0bc; }
+
+  .diag-scroll { flex: 1; overflow-y: auto; padding: 20px 16px 10px; display: flex; flex-direction: column; gap: 16px; }
+
+  .alert-card {
+    background: var(--card-alert);
+    border: 1px solid var(--danger);
+    border-radius: 12px;
+    overflow: hidden;
+    animation: slideIn 0.3s ease both;
+  }
+  @keyframes slideIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  .alert-header { padding: 12px 14px 10px; border-bottom: 1px solid #4a1a1a; }
+  .mod-tag { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--danger); text-transform: uppercase; margin-bottom: 6px; }
+  .alert-texto { font-size: 13.5px; line-height: 1.65; color: #f8c0bc; }
+
+  .oracion-box { padding: 12px 14px; background: #1e1520; }
+  .oracion-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .oracion-texto { font-size: 13px; line-height: 1.8; color: #ddd; font-style: italic; }
+  .oracion-ref {
+    display: inline-block; margin-top: 8px;
+    font-size: 11px; font-style: normal; font-weight: 700;
+    color: var(--gold); letter-spacing: 0.5px;
+  }
+
+  .success-card {
+    text-align: center; padding: 40px 20px;
+    color: var(--success); font-size: 16px; line-height: 1.8;
+  }
+  .success-card .icon { font-size: 48px; display: block; margin-bottom: 14px; }
+
+  .reflection-box {
+    margin: 4px 16px 0; background: var(--card);
+    border-radius: 10px; border: 1px solid var(--border); padding: 16px;
+  }
+  .reflection-box .ref-title { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: var(--accent); text-transform: uppercase; margin-bottom: 8px; }
+  .reflection-box p { font-size: 13px; color: #ccc; line-height: 1.7; }
+
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--success); color: #fff; padding: 12px 28px; border-radius: 30px;
+    font-size: 13px; font-weight: 700; letter-spacing: 1px; opacity: 0;
+    transition: all 0.3s; z-index: 100; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div class="screen active" id="menu">
+  <div class="menu-icon">🔍</div>
+  <h1 class="menu-title">AUTOEXAMEN</h1>
+  <p class="menu-verse">
+    "Guarda tu corazón con toda diligencia,<br>porque de él mana la vida."
+    <span>— Proverbios 4:23</span>
+  </p>
+  <button class="btn" onclick="iniciarExamen()">INICIAR EXAMEN DIARIO</button>
+</div>
+
+<!-- EXAMEN -->
+<div class="screen" id="examen">
+  <div class="topbar">
+    <button class="back-btn" onclick="volverMenu()">←</button>
+    <h2 id="modulo-titulo">Módulo</h2>
+    <div class="spacer"></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="prog-label">Módulo 1 de 6</span>
+      <span id="prog-check">0 marcadas</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:16.6%"></div></div>
+  </div>
+  <div class="questions-scroll" id="questions-container"></div>
+  <div class="bottom-action">
+    <button class="btn" id="btn-siguiente" onclick="siguienteModulo()">SIGUIENTE MÓDULO</button>
+  </div>
+</div>
+
+<!-- DIAGNOSTICO -->
+<div class="screen" id="diagnostico">
+  <div class="topbar">
+    <button class="back-btn" onclick="volverMenu()">←</button>
+    <h2>🚨 PUNTOS CIEGOS DETECTADOS</h2>
+    <div class="spacer"></div>
+  </div>
+  <div class="diag-scroll" id="diag-container"></div>
+  <div class="reflection-box">
+    <div class="ref-title">📖 Reflexión de Cierre</div>
+    <p>Presenta estas áreas en oración. La fuerza de voluntad humana no basta; pide renovación y define una acción correctiva para mañana.</p>
+  </div>
+  <div class="bottom-action">
+    <button class="btn btn-danger" onclick="finalizarExamen()">FINALIZAR Y GUARDAR</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Guardado exitosamente</div>
+
+<script>
+const BANCO = [
+  {
+    titulo: "M1: DIOS Y SOBERANÍA",
+    items: [
+      { id:1, texto:"¿Atribuí mis éxitos del día a mis propias capacidades omitiendo dar gracias a Dios?", oracion:"Padre, todo lo bueno que hay en mí viene de Ti. Perdóname por actuar como si fuera autor de mis propios logros. Enséñame a reconocerte en cada victoria.", ref:"Deuteronomio 8:17-18" },
+      { id:2, texto:"¿Puse mi seguridad mental en cosas temporales (dinero, planes, aprobación) antes que en Dios?", oracion:"Señor, solo Tú eres roca firme. Perdóname por buscar estabilidad en lo que perece. Ancla mi corazón únicamente en Ti.", ref:"Salmo 62:5-6" },
+      { id:3, texto:"¿Actué como si Dios no existiera en mis decisiones, sin orar ni buscar dirección divina?", oracion:"Dios mío, perdóname por excluirte de mis planes. Que en todo camino que tome, seas Tú quien dirija mis pasos.", ref:"Proverbios 3:5-6" },
+      { id:4, texto:"¿Permití que la queja dominara mis pensamientos sobre las bendiciones que me rodean?", oracion:"Padre, perdóname por la murmuración. Dame ojos para ver Tu mano en cada circunstancia y un corazón agradecido.", ref:"Filipenses 4:11" },
+      { id:5, texto:"¿Traté las bendiciones diariamente como obligaciones y no con gratitud?", oracion:"Señor, perdóname por dar por sentado lo que Tu mano sostiene cada día. Renueva en mí la gratitud genuina.", ref:"Salmo 103:2" },
+      { id:6, texto:"¿Exigí a Dios que las cosas se hicieran bajo mis propios términos y mis tiempos?", oracion:"Padre, no mi voluntad sino la Tuya. Perdóname por querer doblar Tu soberanía a mis deseos.", ref:"Lucas 22:42" },
+      { id:7, texto:"¿Realicé disciplinas espirituales por mera rutina con la mente completamente dispersa?", oracion:"Señor, perdóname por honrarte con los labios mientras mi corazón estaba lejos. Que mi devoción nazca del amor y no del hábito vacío.", ref:"Isaías 29:13" },
+      { id:8, texto:"¿Busqué una relación de conveniencia con lo divino solo para pedir resolver problemas?", oracion:"Dios mío, perdóname por acercarme a Ti solo cuando necesito algo. Que Te busque por lo que Tú eres, no solo por lo que puedes darme.", ref:"Salmo 27:4" }
+    ]
+  },
+  {
+    titulo: "M2: TRATO CON EL PRÓJIMO",
+    items: [
+      { id:9,  texto:"¿Fui hipócrita al adular a alguien por fuera mientras por dentro sentía desprecio?", oracion:"Señor, perdóname por la doblez de mi corazón. Crea en mí una sinceridad genuina y líbrame de toda hipocresía.", ref:"Santiago 3:17" },
+      { id:10, texto:"¿Hice favores o buenas acciones esperando reconocimiento o un favor de vuelta?", oracion:"Padre, perdóname por servir buscando mi propia gloria. Que mis obras sean hechas solo para Tu honra, en secreto si es necesario.", ref:"Mateo 6:3-4" },
+      { id:11, texto:"¿Exageré o alteré historias para proyectar una imagen más exitosa o inteligente de mí?", oracion:"Señor, Tú eres Dios de verdad. Perdóname por adornar la realidad para parecer más de lo que soy. Que me baste con Tu aprobación.", ref:"Proverbios 12:22" },
+      { id:12, texto:"¿Retuve ofensas del día alimentando el resentimiento en lugar de decidir perdonar?", oracion:"Padre, así como Tú en Cristo me perdonaste, dame la gracia de perdonar también. Sana mi corazón del resentimiento que cargo hoy.", ref:"Efesios 4:32" },
+      { id:13, texto:"¿Practiqué hostilidad pasiva (ley del hielo, sarcasmo) con quien me ofendió?", oracion:"Señor, perdóname por el castigo silencioso que ejercí. Dame valentía para hablar con verdad y amor, y no herir con el silencio.", ref:"Mateo 18:15" },
+      { id:14, texto:"¿Deseé secretamente que le fuera mal o que fuera expuesta una persona que me hirió?", oracion:"Dios mío, perdóname por ese deseo oscuro. Transforma mi corazón para bendecir a quienes me lastiman, como Tú mismo me enseñaste.", ref:"Romanos 12:14" },
+      { id:15, texto:"¿Hablé de los defectos o vida privada de alguien que no estaba presente para defenderse?", oracion:"Señor, perdóname por herir con mis palabras a quien no pudo defenderse. Pon guarda a mi boca y guárdame de destruir con la lengua.", ref:"Salmo 141:3" },
+      { id:16, texto:"¿Disfracé el chisme o murmuración como preocupación legítima o 'motivo de oración'?", oracion:"Padre, perdóname por usar palabras piadosas para encubrir la murmuración. Que mi intercesión sea real y mi lengua, limpia.", ref:"Proverbios 20:19" },
+      { id:17, texto:"¿Fui áspero, hiriente o impaciente con empleados, subordinados, pareja o familia?", oracion:"Señor, perdóname por la dureza con que traté a quienes pusiste bajo mi cuidado. Viste Tu mansedumbre en mi trato cotidiano.", ref:"Colosenses 3:12" },
+      { id:18, texto:"¿Sentí molestia, celos o incomodidad ante el éxito o prosperidad de otra persona?", oracion:"Dios mío, perdóname por la envidia que empañó mi corazón. Enséñame a celebrar el bien ajeno como si fuera propio.", ref:"1 Corintios 13:4" },
+      { id:19, texto:"¿Me alegré secretamente del fracaso o de una equivocación cometida por mi competencia?", oracion:"Padre, perdóname por ese gozo maligno. Que jamás me alegre del mal de nadie, sino que aprenda a llorar con los que lloran.", ref:"Proverbios 24:17" },
+      { id:20, texto:"¿Eclipsé el logro de alguien hablando inmediatamente de mí para recuperar la atención?", oracion:"Señor, perdóname por robar el momento ajeno para protagonizar el mío. Dame un corazón que honre sinceramente a los demás.", ref:"Filipenses 2:3" }
+    ]
+  },
+  {
+    titulo: "M3: PUREZA DE LA MENTE",
+    items: [
+      { id:21, texto:"¿Permití que mi mente se deleitara en pensamientos impuros, lujuria o pornografía mental?", oracion:"Dios santo, perdóname por lo que alimenté en mi mente hoy. Renueva mis pensamientos y guárdalos en todo lo que es puro y verdadero.", ref:"Filipenses 4:8" },
+      { id:22, texto:"¿Maquiné discusiones o venganzas imaginarias ensayando peleas en mi cabeza?", oracion:"Señor, perdóname por las batallas que peleé en mi mente. Lleva todo pensamiento cautivo a la obediencia de Cristo.", ref:"2 Corintios 10:5" },
+      { id:23, texto:"¿Consumí contenido visual o auditivo dañino (morbo, violencia, chismes) que alteró mi paz?", oracion:"Padre, perdóname por lo que permití entrar por mis ojos y oídos. Aparta mi vista de cosas vanas y guarda mi corazón.", ref:"Salmo 101:3" }
+    ]
+  },
+  {
+    titulo: "M4: ESTABILIDAD ANTE UNO MISMO",
+    items: [
+      { id:24, texto:"¿Abracé el desánimo o victimismo diciendo que todo me sale mal y nadie me quiere?", oracion:"Señor, perdóname por rendirme al desánimo como si Tú no estuvieras. Recuérdame que nada me puede separar de Tu amor.", ref:"Romanos 8:38-39" },
+      { id:25, texto:"¿Utilicé la autocompasión para evadir mis responsabilidades y culpar a mis circunstancias?", oracion:"Padre, perdóname por refugiarme en la lástima en lugar de levantarme en Tu fuerza. Que Tu gracia me mueva a actuar.", ref:"Filipenses 4:13" },
+      { id:26, texto:"¿Dudé del amor y la fidelidad de Dios permitiendo que la ansiedad ahogara mi fe?", oracion:"Dios mío, perdóname por la desconfianza. Deposito hoy mis cargas en Ti, pues Tú cuidas de mí y Tu fidelidad no falla.", ref:"1 Pedro 5:7" }
+    ]
+  },
+  {
+    titulo: "M5: HONESTIDAD INTELECTUAL",
+    items: [
+      { id:27, texto:"¿Justifiqué mis malas acciones excusándome en el cansancio, el tráfico o la provocación?", oracion:"Señor, perdóname por esconderme tras las circunstancias. Dame la honradez de asumir mis faltas sin pretextos.", ref:"Proverbios 28:13" },
+      { id:28, texto:"¿Fui estricto para juzgar fallos ajenos pero permisivo e indulgente con los míos?", oracion:"Padre, perdóname por la vara doble con que mido. Que examine primero la viga en mi propio ojo antes de señalar la paja ajena.", ref:"Mateo 7:3" },
+      { id:29, texto:"¿Intenté esconder un mal comportamiento del día sin intención real de enmendarlo?", oracion:"Dios mío, Tú lo ves todo. Perdóname por el encubrimiento. Que la luz de Tu verdad exponga lo que debo confesar y corregir.", ref:"1 Juan 1:9" }
+    ]
+  },
+  {
+    titulo: "M6: USO DE LOS RECURSOS",
+    items: [
+      { id:30, texto:"¿Desperdicié horas valiosas en procrastinación destructiva (redes, teléfono compulsivo)?", oracion:"Señor, perdóname por malgastar el tiempo que me diste. Enséñame a numerar mis días y a redimir cada hora para Tu gloria.", ref:"Efesios 5:16" },
+      { id:31, texto:"¿Trabajé o estudié con desgano o mediocridad sabiendo que podía dar un esfuerzo honesto?", oracion:"Padre, perdóname por la mediocridad de hoy. Que todo lo que haga mañana lo haga de corazón, como para Ti y no para los hombres.", ref:"Colosenses 3:23" },
+      { id:32, texto:"¿Maltraté mi cuerpo mediante glotonería, sustancias dañinas o privación extrema de sueño?", oracion:"Dios mío, perdóname por descuidar el templo que me confiaste. Dame sabiduría para cuidar este cuerpo para Tu honra.", ref:"1 Corintios 6:19-20" }
+    ]
+  }
+];
+
+let moduloActual = 0;
+let respuestas = {};
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function iniciarExamen() {
+  moduloActual = 0;
+  respuestas = {};
+  cargarModulo();
+  showScreen('examen');
+}
+
+function cargarModulo() {
+  const mod = BANCO[moduloActual];
+  document.getElementById('modulo-titulo').textContent = mod.titulo;
+  document.getElementById('prog-label').textContent = `Módulo ${moduloActual + 1} de ${BANCO.length}`;
+  document.getElementById('prog-fill').style.width = `${((moduloActual + 1) / BANCO.length) * 100}%`;
+
+  const btn = document.getElementById('btn-siguiente');
+  btn.textContent = moduloActual === BANCO.length - 1 ? 'VER DIAGNÓSTICO' : 'SIGUIENTE MÓDULO';
+
+  const container = document.getElementById('questions-container');
+  container.innerHTML = '';
+
+  mod.items.forEach(item => {
+    if (!(item.id in respuestas)) respuestas[item.id] = false;
+    const card = document.createElement('div');
+    card.className = 'question-card' + (respuestas[item.id] ? ' checked' : '');
+    card.innerHTML = `
+      <span class="q-text">${item.texto}</span>
+      <div class="q-check">${respuestas[item.id] ? '✓' : ''}</div>
+    `;
+    card.addEventListener('click', () => toggleRespuesta(item.id, card));
+    container.appendChild(card);
+  });
+
+  actualizarContador();
+}
+
+function toggleRespuesta(id, card) {
+  respuestas[id] = !respuestas[id];
+  card.classList.toggle('checked', respuestas[id]);
+  card.querySelector('.q-check').textContent = respuestas[id] ? '✓' : '';
+  actualizarContador();
+}
+
+function actualizarContador() {
+  const mod = BANCO[moduloActual];
+  const marcadas = mod.items.filter(i => respuestas[i.id]).length;
+  document.getElementById('prog-check').textContent = `${marcadas} marcada${marcadas !== 1 ? 's' : ''}`;
+}
+
+function siguienteModulo() {
+  if (moduloActual < BANCO.length - 1) {
+    moduloActual++;
+    cargarModulo();
+    document.getElementById('questions-container').scrollTop = 0;
+  } else {
+    generarDiagnostico();
+    showScreen('diagnostico');
+  }
+}
+
+function generarDiagnostico() {
+  const container = document.getElementById('diag-container');
+  container.innerHTML = '';
+  let hay = false;
+  let delay = 0;
+
+  BANCO.forEach(mod => {
+    mod.items.forEach(item => {
+      if (respuestas[item.id]) {
+        hay = true;
+        const card = document.createElement('div');
+        card.className = 'alert-card';
+        card.style.animationDelay = `${delay}s`;
+        delay += 0.06;
+        card.innerHTML = `
+          <div class="alert-header">
+            <div class="mod-tag">${mod.titulo}</div>
+            <div class="alert-texto">⚠️ ${item.texto}</div>
+          </div>
+          <div class="oracion-box">
+            <div class="oracion-label">🙏 Oración sugerida</div>
+            <div class="oracion-texto">
+              "${item.oracion}"
+              <span class="oracion-ref">— ${item.ref}</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    });
+  });
+
+  if (!hay) {
+    container.innerHTML = `
+      <div class="success-card">
+        <span class="icon">✨</span>
+        ¡Excelente examen! Hoy no se detectaron puntos ciegos activos en tu corazón.<br><br>Mantente vigilante.
+      </div>`;
+  }
+}
+
+function finalizarExamen() {
+  const fecha = new Date().toISOString().split('T')[0];
+  const historial = JSON.parse(localStorage.getItem('autoexamen_historial') || '[]');
+  const entrada = {
+    fecha,
+    puntos: Object.entries(respuestas).filter(([, v]) => v).map(([k]) => parseInt(k))
+  };
+  historial.push(entrada);
+  localStorage.setItem('autoexamen_historial', JSON.stringify(historial));
+  showToast();
+  setTimeout(() => showScreen('menu'), 1800);
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function volverMenu() { showScreen('menu'); }
+</script>
+</body>
+</html>
