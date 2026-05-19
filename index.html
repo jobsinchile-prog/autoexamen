@@ -5,22 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Autoexamen</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-<!-- PWA metadatos para instalación en móvil -->
-<link rel="manifest" href="data:application/manifest+json,{
-  \"name\": \"Autoexamen Diario\",
-  \"short_name\": \"Autoexamen\",
-  \"start_url\": \".\",
-  \"display\": \"standalone\",
-  \"theme_color\": \"#191b22\",
-  \"background_color\": \"#191b22\",
-  \"icons\": [{
-    \"src\": \"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234274ea'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='monospace'%3E🔍%3C/text%3E%3C/svg%3E\",
-    \"sizes\": \"any\",
-    \"type\": \"image/svg+xml\"
-  }]
-}">
+
+<!-- PWA: Meta tags para instalación en móvil -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Autoexamen">
+
 <style>
   :root {
     --bg: #191b22;
@@ -307,6 +297,79 @@
 <div class="toast" id="toast">✓ Guardado exitosamente</div>
 
 <script>
+// ==================== REGISTRO DE SERVICE WORKER Y PWA ====================
+// Este script se ejecuta al cargar la página y registra el Service Worker
+// También inyecta el manifest.json dinámicamente
+
+(function registrarPWA() {
+  // 1. Crear e inyectar manifest.json dinámicamente
+  const manifestData = {
+    name: "Autoexamen Diario",
+    short_name: "Autoexamen",
+    start_url: ".",
+    display: "standalone",
+    theme_color: "#191b22",
+    background_color: "#191b22",
+    icons: [
+      {
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234274ea'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='monospace'%3E🔍%3C/text%3E%3C/svg%3E",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any maskable"
+      }
+    ]
+  };
+  
+  // Si no existe un manifest link, lo creamos
+  let manifestLink = document.querySelector('link[rel="manifest"]');
+  if (!manifestLink) {
+    manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifestData));
+    document.head.appendChild(manifestLink);
+  }
+  
+  // 2. Registrar Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+      console.log('Service Worker registrado con éxito:', reg);
+    }).catch(function(err) {
+      console.log('Error al registrar Service Worker:', err);
+      // Si falla, intentamos con un SW inline
+      registerInlineServiceWorker();
+    });
+  }
+  
+  function registerInlineServiceWorker() {
+    const swCode = `self.addEventListener('install', event => {
+      self.skipWaiting();
+      event.waitUntil(
+        caches.open('autoexamen-v1').then(cache => {
+          return cache.addAll([
+            '/',
+            '/index.html'
+          ]);
+        })
+      );
+    });
+    self.addEventListener('fetch', event => {
+      event.respondWith(
+        caches.match(event.request).then(response => {
+          return response || fetch(event.request);
+        })
+      );
+    });`;
+    
+    const blob = new Blob([swCode], {type: 'application/javascript'});
+    const url = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).then(reg => {
+      console.log('Service Worker inline registrado');
+      URL.revokeObjectURL(url);
+    }).catch(err => console.log('Error SW inline:', err));
+  }
+})();
+
+// ==================== BANCO DE PREGUNTAS ====================
 const BANCO = [
   {
     titulo: "M1: DIOS Y SOBERANÍA",
@@ -397,10 +460,9 @@ function programarRecordatorio() {
   const horaSel = parseInt(document.getElementById("horaRecordatorio").value);
   localStorage.setItem("horaRecordatorio", horaSel);
   showToast(`✅ Recordatorio programado a las ${horaSel.toString().padStart(2,'0')}:00`);
-  // La comprobación se hará cada minuto
   if (window._notifInterval) clearInterval(window._notifInterval);
   window._notifInterval = setInterval(verificarYNotificar, 60000);
-  verificarYNotificar(); // por si justo es la hora
+  verificarYNotificar();
 }
 
 function verificarYNotificar() {
@@ -410,7 +472,6 @@ function verificarYNotificar() {
   const ahora = new Date();
   const horaActual = ahora.getHours();
   if (horaActual == parseInt(horaGuardada)) {
-    // Evitar notificar varias veces en la misma hora
     const hoyStr = ahora.toDateString();
     const ultimaNotif = localStorage.getItem("ultimaNotifFecha");
     if (ultimaNotif === hoyStr) return;
@@ -430,7 +491,6 @@ function cargarHoraGuardada() {
   }
   if (Notification.permission === "granted") programarRecordatorio();
 }
-// --- Fin recordatorios ---
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
