@@ -87,13 +87,13 @@
     border: none; border-radius: 10px;
     font-family: 'Lato', sans-serif; font-size: 13px;
     font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
     box-shadow: 0 4px 20px rgba(66,116,234,0.35);
+    -webkit-tap-highlight-color: transparent;
   }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(66,116,234,0.45); }
   .btn:active { transform: translateY(0); opacity: 0.88; }
   .btn-danger { background: var(--danger); box-shadow: 0 4px 20px rgba(192,57,43,0.35); }
-  .btn-danger:hover { box-shadow: 0 8px 28px rgba(192,57,43,0.45); }
   .btn-mental {
     background: var(--mental);
     box-shadow: 0 4px 20px rgba(142,68,173,0.35);
@@ -101,7 +101,6 @@
     font-size: 11px;
     padding: 10px;
   }
-  .btn-mental:hover { box-shadow: 0 8px 28px rgba(142,68,173,0.45); }
   .btn-outline {
     background: transparent;
     border: 1px solid var(--accent);
@@ -114,7 +113,6 @@
     border: 1px solid var(--danger);
     box-shadow: 0 4px 20px rgba(122,46,26,0.35);
   }
-  .btn-warning:hover { background: #9a3a22; box-shadow: 0 8px 28px rgba(122,46,26,0.45); }
 
   .time-config {
     margin: 20px auto 10px;
@@ -171,9 +169,10 @@
     background: var(--card); border-radius: 12px;
     border: 1px solid var(--border); padding: 16px 14px;
     display: flex; align-items: center; gap: 14px;
-    cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .question-card:hover { border-color: var(--accent); transform: translateX(2px); }
   .question-card.checked { background: #1b2540; border-color: var(--danger); }
   .question-card.checked .q-text { color: #f8c0bc; }
   .q-text { flex: 1; font-size: 14px; line-height: 1.6; color: var(--text); transition: color 0.2s; }
@@ -344,7 +343,7 @@
       <option value="16">16:00</option><option value="17">17:00</option><option value="18">18:00</option><option value="19">19:00</option>
       <option value="20" selected>20:00</option><option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
     </select>
-    <small>📱 La app te recordará a esta hora (si permites notificaciones)</small>
+    <small>📱 El recordatorio solo funciona si la app está abierta (en segundo plano).</small>
     <button class="btn btn-outline" onclick="solicitarPermisoYProgramar()" style="margin-top: 12px;">🔔 ACTIVAR RECORDATORIO</button>
   </div>
 
@@ -376,7 +375,8 @@
   </div>
   <div class="questions-scroll" id="questions-container"></div>
   <div class="bottom-action">
-    <button class="btn" id="btn-siguiente" onclick="siguienteModulo()">SIGUIENTE MÓDULO</button>
+    <!-- CORRECCIÓN: Eventos duales onclick + ontouchstart para respuesta inmediata -->
+    <button class="btn" id="btn-siguiente" onclick="siguienteModulo()" ontouchstart="siguienteModulo()">SIGUIENTE MÓDULO</button>
   </div>
 </div>
 
@@ -415,11 +415,10 @@
 <div class="toast" id="toast">✓ Guardado exitosamente</div>
 
 <script>
-// ==================== REGISTRO DE SERVICE WORKER Y MANIFEST CON ID ====================
+// ==================== MANIFEST CON ID FIJO ====================
 (function registrarPWA() {
-  // 1. Crear e inyectar manifest.json con ID fijo para evitar registros fantasmas
   const manifestData = {
-    id: "/autoexamen",           // <--- CLAVE: evita que queden registros al desinstalar
+    id: "/autoexamen",
     name: "Autoexamen Diario",
     short_name: "Autoexamen",
     start_url: ".",
@@ -436,46 +435,12 @@
     ]
   };
   
-  // Si no existe un manifest link, lo creamos
   let manifestLink = document.querySelector('link[rel="manifest"]');
   if (!manifestLink) {
     manifestLink = document.createElement('link');
     manifestLink.rel = 'manifest';
     manifestLink.href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifestData));
     document.head.appendChild(manifestLink);
-  }
-  
-  // 2. Registrar Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(function(err) {
-      console.log('Service Worker no disponible, intentando inline:', err);
-      registerInlineServiceWorker();
-    });
-  }
-  
-  function registerInlineServiceWorker() {
-    const swCode = `self.addEventListener('install', event => {
-      self.skipWaiting();
-      event.waitUntil(
-        caches.open('autoexamen-v1').then(cache => {
-          return cache.addAll(['/', '/index.html']);
-        })
-      );
-    });
-    self.addEventListener('fetch', event => {
-      event.respondWith(
-        caches.match(event.request).then(response => {
-          return response || fetch(event.request);
-        })
-      );
-    });`;
-    
-    const blob = new Blob([swCode], {type: 'application/javascript'});
-    const url = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(url).then(reg => {
-      console.log('Service Worker inline registrado');
-      URL.revokeObjectURL(url);
-    }).catch(err => console.log('Error SW inline:', err));
   }
 })();
 
@@ -743,7 +708,9 @@ function cerrarModal() {
   document.getElementById('mentalModal').classList.remove('active');
 }
 
-// --- Recordatorios ---
+// ==================== RECORDATORIOS (corregido) ====================
+let intervaloRecordatorio = null;
+
 function solicitarPermisoYProgramar() {
   if (!("Notification" in window)) {
     showToast("❌ Este navegador no soporta notificaciones");
@@ -764,9 +731,9 @@ function solicitarPermisoYProgramar() {
 function programarRecordatorio() {
   const horaSel = parseInt(document.getElementById("horaRecordatorio").value);
   localStorage.setItem("horaRecordatorio", horaSel);
-  showToast(`✅ Recordatorio programado a las ${horaSel.toString().padStart(2,'0')}:00`);
-  if (window._notifInterval) clearInterval(window._notifInterval);
-  window._notifInterval = setInterval(verificarYNotificar, 60000);
+  showToast(`✅ Recordatorio activado a las ${horaSel.toString().padStart(2,'0')}:00 (solo con app abierta)`);
+  if (intervaloRecordatorio) clearInterval(intervaloRecordatorio);
+  intervaloRecordatorio = setInterval(verificarYNotificar, 30000);
   verificarYNotificar();
 }
 
@@ -776,13 +743,15 @@ function verificarYNotificar() {
   if (horaGuardada === null) return;
   const ahora = new Date();
   const horaActual = ahora.getHours();
-  if (horaActual == parseInt(horaGuardada)) {
+  const minutoActual = ahora.getMinutes();
+  
+  if (horaActual == parseInt(horaGuardada) && minutoActual < 2) {
     const hoyStr = ahora.toDateString();
     const ultimaNotif = localStorage.getItem("ultimaNotifFecha");
     if (ultimaNotif === hoyStr) return;
     localStorage.setItem("ultimaNotifFecha", hoyStr);
     new Notification("🔍 AUTOEXAMEN DIARIO", {
-      body: "Tómate 5 minutos para revisar tu corazón. 'Guarda tu corazón con toda diligencia' Proverbios 4:23"
+      body: "Tómate 5 minutos para revisar tu corazón. Proverbios 4:23"
     });
   }
 }
@@ -796,11 +765,10 @@ function cargarHoraGuardada() {
   if (Notification.permission === "granted") programarRecordatorio();
 }
 
-// --- Funciones principales de la app ---
+// ==================== FUNCIONES PRINCIPALES DE LA APP ====================
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
 }
 
 function iniciarExamen() {
@@ -840,7 +808,8 @@ function cargarModulo() {
 function toggleRespuesta(id, card) {
   respuestas[id] = !respuestas[id];
   card.classList.toggle('checked', respuestas[id]);
-  card.querySelector('.q-check').textContent = respuestas[id] ? '✓' : '';
+  const checkDiv = card.querySelector('.q-check');
+  if (checkDiv) checkDiv.textContent = respuestas[id] ? '✓' : '';
   actualizarContador();
 }
 
@@ -850,11 +819,11 @@ function actualizarContador() {
   document.getElementById('prog-check').textContent = `${marcadas} marcada${marcadas !== 1 ? 's' : ''}`;
 }
 
+// CORRECCIÓN: Eliminado scrollTop que causaba problemas
 function siguienteModulo() {
   if (moduloActual < BANCO.length - 1) {
     moduloActual++;
     cargarModulo();
-    document.getElementById('questions-container').scrollTop = 0;
   } else {
     generarDiagnostico();
     showScreen('diagnostico');
